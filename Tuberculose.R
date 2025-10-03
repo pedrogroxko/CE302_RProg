@@ -94,7 +94,7 @@ summary(REGIAO)
 INCIDENCIA <- round((casos.regiao/POP22REG)*10000,2)
 INCIDENCIA
 barplot(INCIDENCIA)
-
+casos.regiao
 inc.norte <- 23.89
 inc.nd <- 15.01
 inc.co <- 9.49
@@ -109,3 +109,49 @@ barplot(incidencias,
         col = "lightblue",
         main = "Incidência de Tuberculose por Região",
         ylab = "Incidência")
+
+
+install.packages("geobr")
+library(geobr)
+brasil <- read_region(year = 2020)
+plot(brasil)
+
+install.packages("cartogram")
+library(cartogram)
+
+library(geobr)
+library(sf)
+library(cartogram)
+
+# Shapefile do Brasil por regiões
+regioes <- read_region(year = 2020)
+
+# Criar um data frame com os casos por região
+casos.regiao <- data.frame(
+  code_region = c(1, 2, 3, 4, 5),   
+  casos_tb = c(41461, 82020, 141573, 37648, 15463) 
+)
+
+# Juntar os dados espaciais com os de casos
+# Precisamos primeiro mudar a projeção para merkator
+regioes_merc <- st_transform(regioes, 3857)
+# Juntando
+regioes_tb <- merge(regioes_merc, casos.regiao, by = "code_region")
+
+# cartograma distorcido
+regioes_carto <- cartogram_cont(regioes_tb, "casos_tb", itermax = 5)
+
+# Escolha uma paleta de cores, por exemplo:
+cores <- rainbow(length(unique(regioes_carto$name_region)))
+
+# Crie um vetor de cores para cada região
+cor_por_regiao <- setNames(cores, unique(regioes_carto$name_region))
+colormap <- cor_por_regiao[regioes_carto$name_region]
+
+
+plot(regioes_carto["casos_tb"], 
+     main = "Cartograma das Regiões do Brasil Distorcido pelos Casos de Tuberculose") +
+  legend("bottomleft", 
+                legend = unique(regioes_carto$name_region), 
+                fill = cores, 
+                title = "Região")
